@@ -22,7 +22,7 @@ library(plyr)
 This file documents issues with the data and analysis of Lyons et al.
 
 ```{r importChunk}
-combETE <- read.csv("combinedETE.csv")
+combETE <- read.csv("./data/combinedETE.csv")
 combETE$Age.yrs <- ifelse(combETE$Age > 33, combETE$Age, 33) # Synchronize ages of modern ETE datasets with those of the modern Gotelli & Ulrich data (median of ages = 33 years)
 combETE$Age.log <- log10(combETE$Age)
 ```

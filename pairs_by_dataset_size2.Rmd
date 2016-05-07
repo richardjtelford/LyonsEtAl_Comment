@@ -14,7 +14,7 @@ library(grid)
 ```
 
 ```{r importChunk}
-source("pairs by dataset size functions.R")
+source("pairsByDatasetSize_functions.R")
 #12
 ```
 
@@ -71,19 +71,19 @@ rodents<-read.table("http://academics.smcvt.edu/dmccabe/teaching/Community/matri
 rodents<-as.data.frame(t(rodents))
 
 #pollen 0K
-pollen0<-read.csv("Blois_matrix_0.csv", row.names = 1)
+pollen0<-read.csv("./data/Blois_matrix_0.csv", row.names = 1)
 pollen0<-as.data.frame(t(pollen0))
 
 #pollen 1K
-pollen1<-read.csv("Blois_matrix_1.csv", row.names = 1)
+pollen1<-read.csv("./data/Blois_matrix_1.csv", row.names = 1)
 pollen1<-as.data.frame(t(pollen1))
 
 #Holocene mammals
-mammals<-read.table("LyonsHolocene.txt", row.names = 1, header = TRUE, sep="\t", comment = "")
+mammals<-read.table("./data/LyonsHolocene.txt", row.names = 1, header = TRUE, sep="\t", comment = "")
 mammals<-as.data.frame(t(mammals))
 
 #Wisconsin understorey 1950
-wisconsin<-read.table("WI_1950_u.txt", row.names = 1, header = TRUE)
+wisconsin<-read.table("./data/WI_1950_u.txt", row.names = 1, header = TRUE)
 wisconsin<-as.data.frame(t(wisconsin))
 ```
 
