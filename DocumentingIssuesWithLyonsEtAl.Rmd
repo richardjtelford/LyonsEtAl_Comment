@@ -1,0 +1,197 @@
+---
+title: "Documenting issues with Lyons et al"
+author: "Richard J. Telford"
+date: '2016-02-27'
+output: pdf_document
+---
+
+```{r global_options, include=FALSE, cache=FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=6, fig.path='Figs/', echo=TRUE, warning=FALSE, message=FALSE, tidy=TRUE, cache=TRUE)
+```
+
+```{r libraryChunk, cache=FALSE}
+#load packages
+library(knitr)
+library(ggplot2)
+library(segmented)
+library(plyr)
+```
+
+# Introduction
+
+This file documents issues with the data and analysis of Lyons et al.
+
+```{r importChunk}
+combETE <- read.csv("combinedETE.csv")
+combETE$Age.yrs <- ifelse(combETE$Age > 33, combETE$Age, 33) # Synchronize ages of modern ETE datasets with those of the modern Gotelli & Ulrich data (median of ages = 33 years)
+combETE$Age.log <- log10(combETE$Age)
+```
+
+# Modern data issues
+
+The number of island data-sets does not match that reported in the paper (53).
+```{r numIslands}
+kable(as.data.frame(table(combETE$land.island)))
+```
+
+Two of the modern land data-sets are identical.
+
+```{r duplicateChunk}
+kable(subset(combETE, Dataset == "montanemco.txt" | Dataset == "montmammco.txt", select = c(Dataset, numAgg:numSeg, numSpp:numSites)), caption = "Identical data-sets")
+
+url <- "http://academics.smcvt.edu/dmccabe/teaching/Community/matrices_ecosim/"
+montanemco.txt <- read.table(paste0(url, "montanem.txt"), header = TRUE, row.names = 1)
+montmammco.txt <- read.table(paste0(url, "montmamm.txt"), header = TRUE, row.names = 1)
+identical(montanemco.txt, montmammco.txt)
+```
+
+One data-set is a transposed version of another. The files from McCabe's website appear to be correctly orientated, but one on Patterson's dropbox is transposed. 
+
+```{r transposedChunk}
+kable(subset(combETE, Dataset == "gbmam83co.txt" | Dataset == "gbmam93co.txt", select = c(Dataset, numSpp:numSites)), caption = "Reported data dimensions")
+
+#gbmam78co.txt <- read.table(paste0(url, "gbmam78.txt"), header = TRUE, row.names = 1)
+gbmam83co.txt <- read.table(paste0(url, "gbmam83.txt"), header = TRUE, row.names = 1)
+gbmam93co.txt <- read.table(paste0(url, "gbmam93.txt"), header = TRUE, row.names = 1)
+
+kable(
+  rbind(Gbmam83 = c(nrow = nrow(gbmam83co.txt), ncol = ncol(gbmam93co.txt)), GBmam93 = c(nrow = nrow(gbmam93co.txt), ncol = ncol(gbmam93co.txt)))
+  , caption = "Dimensions of data archived by McCabe")
+
+downloadFromDropbox <- function(url){
+  f <- readLines(url)
+  endnotes <- grep("endnotes", f)
+  dat <- f[(endnotes + 1) : length(f)]
+  dat <- gsub("\032","", dat)
+  dat1<-strsplit(paste(dat, collapse = ""), "")[[1]]
+  matrix(as.numeric(dat1), ncol = nchar(dat[1]), byrow = TRUE)
+}
+
+Gbmam83 <- downloadFromDropbox("https://www.dropbox.com/sh/jbi3bgsalw6e6kt/AABSFzYn6pZyaSBUujRFKZxIa/MATRICES/Gbmam83.txt?dl=1")
+Gbmam93 <- downloadFromDropbox("https://www.dropbox.com/sh/jbi3bgsalw6e6kt/AAAuA039ZhhuZfYgahu2H7fOa/MATRICES/Gbmam93.txt?dl=1")
+
+kable(
+  rbind(Gbmam83 = c(nrow = nrow(Gbmam83), ncol = ncol(Gbmam83)), GBmam93 = c(nrow = nrow(Gbmam93), ncol = ncol(Gbmam93)))
+  , caption = "Dimensions of data archived on Dropbox")
+
+#83 and 93 data are similar - different versions of the same data
+sapply(1:nrow(Gbmam83), function(i){
+  identical(Gbmam83[i,], Gbmam93[, i])
+})
+
+#Data from McCabe and Patterson are identical except for the transposition
+all(gbmam83co.txt - t(Gbmam83) == 0)
+all(gbmam93co.txt - Gbmam93 == 0)
+
+```
+
+Two data-set are reported with the wrong number of sites. This will affect the weighted loess, but only slightly as both have a proportion aggregated taxa near the middle of the range.
+
+```{r datasetSizeChunk}
+swus <-  subset(combETE, Dataset == "swusdsroco.txt" | Dataset == "swusrodco.txt", select = c(Dataset, percAgg, numSpp:numSites))
+swusdsro.txt <- read.table(paste0(url, "swusdsro.txt"), header = TRUE, row.names = 1)
+swusrodco.txt <- read.table(paste0(url, "swusrod.txt"), header = TRUE, row.names = 1)
+kable(
+  cbind(swus, NSITES = c(ncol(swusdsro.txt), ncol(swusrodco.txt)))
+  , caption = "Number of sites reported and of the archived data")
+
+```
+
+## Dispersal-limited datasets
+
+Some of the land data-sets are either from oceanic islands or from other dispersal limited systems. These have a significantly lower proportion of aggregated pairs than the other terrestrial data-sets.
+
+```{r dispersalLimitedChunk}
+dispersalLimited<-c('canlauioco.txt', 'canlaussco.txt', 'caveio23co.txt', 'texaqhco.txt', 'orealbutco.txt', 'montanemco.txt', 'montmammco.txt','rockymamco.txt', 'gbfishco.txt', 'gbmam78co.txt', 'gbmam83co.txt', 'gbmam93co.txt')
+combETE$dispersalLimited <- combETE$Dataset%in%dispersalLimited
+
+dl<-ggplot(subset(combETE, land.island == "land"), aes(x = dispersalLimited, y = percAgg, size = numSites, colour = dispersalLimited)) +
+  geom_jitter(height = 0) + guides(colour = "none") + ggtitle("Proportion Aggregated vs dispersal limited land datasets")
+print(dl)
+
+wilcox.test(percAgg ~ dispersalLimited, data = combETE, subset = land.island == "land")
+```
+
+# Overlapping Data-sets
+
+There are many overlapping data-sets in the modern land data. For example,
+
+* All of the US desert rodents data-sets are subsets of swusrodco.txt, with much overlap between subsets.
+* canlauioco.txt and canlaussco.txt differ only in how subspecies were treated.
+* wauscamco.txt is a subset of species in wausnailco.txt
+* illwdb79co.txt samples the same forests as illwdb80co.txt
+* chiweedco.txt includes all the sites in chiweedoco.txt
+
+The fossil data are also pseudo-replicated. For example pollen data from adjacent millennium cannot be considered independent, nor can the repeated data-sets on Wisconsin flora and African mammals. These non-independent data-sets will inflate the risk of Type-I errors.
+
+# Breakpoint analysis
+
+```{r breakpointModelsChunk, results="hide", fig.keep='none'}
+set.seed(9088)#from random.org
+boot.num = 10000
+
+#all data
+lm.all <- lm(percAgg ~ Age.log, data=combETE)
+seg.all <- segmented(lm.all, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+
+#no island
+lm.noisland <- lm(percAgg ~ Age.log, data = combETE, subset = land.island != "island")
+seg.noisland <- segmented(lm.noisland, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+
+#no island
+lm.noisland20 <- lm(percAgg ~ Age.log, data = combETE, subset = land.island != "island" & numSites > 20  & !dispersalLimited)
+seg.noisland20 <- segmented(lm.noisland20, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+
+
+#no dispersal limited
+lm.nodisp <- lm(percAgg ~ Age.log, data=combETE, subset = land.island!="island" & !dispersalLimited)
+seg.nodisp <- segmented(lm.nodisp, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+
+#fossil only - show plot
+lm.foss <- lm(percAgg ~ Age.log, data=combETE, subset = land.island == "ETE")
+seg.foss <- segmented(lm.foss, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+
+#fossil + 3 island
+lm.foss3 <- lm(percAgg ~ Age.log, data=combETE, subset = land.island == "ETE" | Dataset %in% c("canaboco.txt", "ausismamco.txt", "bassreptco.txt"))
+seg.foss3 <- segmented(lm.foss3, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+
+```
+
+segmented() gives exactly the same breakpoint position whether the island data are included or not. At three decimal places, this result is precise to a decade, 6000 years ago. Given the enormously wide confidence intervals, this repeated result suggests that the model has got trapped on a local mimima. That exactly the same breakpoint position is obtained when the fossil data plus three islands with zero aggregation is analyses confirms this - even if the 6000 yr breakpoint was robust, the estimate should vary by at least slightly when different data are used. The likelihood surface of a breakpoint model is non-differentiable, segmented() does not seem to be able to cope in this case.
+
+When the island data are excluded, the lower 95% CI is younger than the youngest data point. This is impossible - for there to be a break, it must be within the data. Again this suggests that segmented() has failed to fit properly. The upper 95%CI with no island data is so old that it is very uncertain that the breakpoint is in the Holocene. 
+
+If the islands data-sets and the dispersal limited land data-sets are omitted, segmented() does not find a Holocene breakpoint (this analysis is very slow). Likewise, if all the land and island data-sets are omitted, the segmented() does not find a Holocene breakpoint.
+
+```{r breakpointOutput}
+mods<-list(alldata = seg.all, noIsland = seg.noisland, noDispersalLimited = seg.nodisp, fossil = seg.foss, fossil3 = seg.foss3)
+kable(ldply(mods, function(x)confint(x)$Age), caption  = "Breakpoint position (log10(age))")
+kable(ldply(mods, function(x)10^confint(x)$Age), caption = "Breakpoint poisition (age)")
+
+plot(percAgg ~ Age.log, data=combETE, subset = land.island!="island" & !dispersalLimited, ylab="Proportion of significant pairs that are aggregated", xlab=expression('log'[10]*'(Years)'), pch=16, main="No island or dispersal limited data-sets", xlim=rev(range(combETE$Age.log)) )
+lines(seg.foss, pch=19, bottom=TRUE, lwd=2, col="red")
+plot(seg.nodisp, add=TRUE, link=FALSE, lwd=2,lty=c(1,3), rug=FALSE, col=c("red"), shade=FALSE, conf.level=0.95, pch=16)
+```
+
+As the model does not seem to have fitted properly, AIC should not be relied upon too much, but the AIC of the No island model is worse (ie higher) for the segmented model than the non-segmented model.
+
+```{r breakpointOutput2}
+AIC(seg.all, lm.all)
+AIC(seg.noisland, lm.noisland)
+```
+
+The Davies test implemented in the segmented package suggests that the breakpoint is not significant for either the full data-set, nor the no Island data-set.
+
+```{r daviesChunk}
+davies.test(obj = lm.all, seg.Z = ~Age.log, k = 10)
+davies.test(obj = lm.noisland, seg.Z = ~Age.log, k = 10)
+```
+
+I suspect that at least some of the problem that the segmented model is having is due to the trimodal distribution of ages. This probably helps pin the breakpoint into the central data cluster.
+```{r densityChunk}
+dp <- ggplot(combETE, aes(x = Age.log)) +
+  geom_density(adjust = 0.4) + scale_x_reverse() + geom_vline(xintercept = log10(6000), colour = "red")
+print(dp)
+```
+
+When the breakpoint analysis is fitted using MCMC in JAGS, the best model has mmultiple breakpoints.
