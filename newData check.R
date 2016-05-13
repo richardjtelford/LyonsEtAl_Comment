@@ -61,3 +61,10 @@ ggplot(smallData, aes(x = log10(Age.yrs), y = percAgg, col = land.island.mod.COR
   scale_x_reverse() +
   geom_vline(xintercept = log10(6000), linetype = 2, colour = "grey80")
 
+
+#does one extra dataset with pagg == 0 change BP
+smallPlus <- rbind(smallData, subset(allData, Dataset == "1000islmco.txt", -(2:5)))
+lm.plus <- lm(percAgg ~ Age.log, data = smallPlus)
+seg.plus <- segmented(lm.plus, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
+10^confint(seg.plus)$Age # not seven thousand
+
