@@ -68,3 +68,4 @@ lm.plus <- lm(percAgg ~ Age.log, data = smallPlus)
 seg.plus <- segmented(lm.plus, seg.Z= ~Age.log, psi=list(Age.log = log10(c(10000)) ) , seg.control(n.boot=boot.num) )
 10^confint(seg.plus)$Age # not seven thousand
 
+#effect of changing pagg of extra dataset
