@@ -30,12 +30,16 @@ mods<-list(alldata = list(m0 = lm.all, m1 = seg.all), noIsland = list(m0 = lm.no
 
 confint(mods[[1]]$m1)#4 sig figs
 
-ldply(mods, function(x){
-  #browser()
+out <- ldply(mods, function(x){
   ci <- signif(10^confint(x$m1)$Age[1, ], 4)
   ci <- format(round(ci), big.mark=",", trim=TRUE, scientific = FALSE)
   aic <- setNames(AIC(x$m0, x$m1)[,"AIC"], c("AIC.lm", "AIC.seg"))
-  davis <- davies.test(obj = x$m0, seg.Z = ~Age.log, k = 10)
-  res <- c(ci, round(aic, 2), davis.test.p = round(davis$p.value, 2))
+  davies <- davies.test(obj = x$m0, seg.Z = ~Age.log, k = 10)
+  res <- c(ci, round(aic, 1), davis.test.p = round(davies$p.value, 2))
   data.frame(as.list(res))
 })
+
+names(out) <- c("Data sets", "Estimate, yrs", "lower 95% CI, yrs", "upper 95% CI, yrs", "AIC lm", "AIC seg", "Davies test p")
+out
+
+save(out, file = "breakpoint.table.Rdata")
