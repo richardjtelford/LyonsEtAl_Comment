@@ -1,7 +1,9 @@
 #load packages
 library("readxl")
+library("plyr")
 library("dplyr")
 library("segmented")
+
 
 #functions
 run.segmented <- function(data){
@@ -14,7 +16,7 @@ run.segmented <- function(data){
 }
 
 make.table1 <- function(mods){
-  ldply(mods, function(x){
+  out <- ldply(mods, function(x){
     ci <- signif(10^confint(x$m1)$Age[1, ], 4)
     ci <- format(round(ci), big.mark=",", trim=TRUE, scientific = FALSE)
     aic <- setNames(AIC(x$m0, x$m1)[,"AIC"], c("AIC.lm", "AIC.seg"))
@@ -35,7 +37,8 @@ dispersalLimited<-c('canlauioco.txt', 'canlaussco.txt', 'caveio23co.txt', 'texaq
 comb <- comb %>% 
   mutate(Age = ifelse(land.island.published == "ETE", age.published, 33)) %>%
   mutate(Age.log = log10(Age)) %>%
-  mutate(dispersalLimited = Dataset %in% dispersalLimited)
+  mutate(dispersalLimited = Dataset %in% dispersalLimited) %>%
+  mutate(AGE = cut(age.published, breaks = c(0, 100, 1000000, 10^9), labels = c("Modern", "Shallow Time", "Deep Time")))
 
 
 #filter to published
@@ -58,11 +61,10 @@ mod.noisland <- run.segmented(combp %>% filter(land.island.published != "island"
 mod.nodisp <- run.segmented(combp %>% filter(land.island.published != "island" & !dispersalLimited))
 
 #extract
-
 mods<-list(alldata = mod.all, noIsland = mod.noisland, noDispersalLimited = mod.nodisp)
 
 table1 <- make.table1(mods)
-
+table1
 #save
 save(table1, file = "breakpoint2.table.Rdata")
 load(file = "breakpoint2.table.Rdata")
@@ -70,4 +72,79 @@ load(file = "breakpoint.table.Rdata")
 
 ###
 #segemented models with corrected and shrunk data
+
+#All mainland data included - noisland above
+#Corrected data only
+correctedData <- comb %>%
+  filter(!land.island.mod.CORRECTED %in% c("island", "NA"))
+correctedData %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+corrected <- run.segmented(correctedData)
+
+#Corrected data; overlapping datasets removed
+noOverlapData <- comb %>%
+  filter(!land.island.mod.CORRECTED.overlapping.removed %in% c("island", "NA"))
+noOverlapData %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+noOverlap <- run.segmented(noOverlapData)
+
+
+#Corrected data; overlapping datasets removed; Telford filtered
+noOverlapDataT <- comb %>%
+  filter(!land.island.mod.CORRECTED.overlapping.removed.Telford.filter %in% c("island", "NA"))
+noOverlapDataT %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+noOverlapT <- run.segmented(noOverlapDataT)
+
+
+#Corrected data; overlapping datasets removed; >10
+noOverlapData10 <- noOverlapData %>%
+  filter(numSites > 10)
+noOverlapData10 %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+noOverlap10 <- run.segmented(noOverlapData10)
+
+
+#Corrected data; overlapping datasets removed; Telford filtered; >10
+noOverlapDataT10 <- noOverlapDataT %>%
+  filter(numSites > 10)
+noOverlapDataT10 %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+noOverlapT10 <- run.segmented(noOverlapDataT10)
+
+#Corrected data; overlapping datasets removed; >20 sites
+noOverlapData20 <- noOverlapData %>%
+  filter(numSites > 20)
+noOverlapData20 %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+noOverlap20 <- run.segmented(noOverlapData20)
+
+#Corrected data; overlapping datasets removed; Telford filtered >20 sites
+noOverlapDataT20 <- noOverlapDataT %>%
+  filter(numSites > 20)
+noOverlapDataT20 %>%
+  group_by(AGE) %>%
+  summarise(n = n(), mean = mean(percAgg))
+noOverlapT20 <- run.segmented(noOverlapDataT20)
+
+#extract
+mods_cor <- list(
+    all = mod.noisland,
+    corrected = corrected,
+    noOverlap = noOverlap,
+    noOverlapT = noOverlapT,
+    noOverlap10 = noOverlap10,
+    noOverlapT10 = noOverlapT10,
+    noOverlap20  = noOverlap20,
+    noOverlapT20 = noOverlapT20
+  )
+
+table1c <- make.table1(mods_cor)
+table1c
 
