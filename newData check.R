@@ -3,7 +3,7 @@
 combETE <- read.csv("./data/combinedETE.csv")
 combETE$Age.yrs <- ifelse(combETE$Age > 33, combETE$Age, 33) # Synchronize ages of modern ETE datasets with those of the modern Gotelli & Ulrich data (median of ages = 33 years)
 combETE$Age.log <- log10(combETE$Age)
-
+table(combETE$land.island)
 
 #new data
 newData <- read.csv("./data/comb.data_Telford.csv", stringsAsFactor = FALSE)
