@@ -34,9 +34,9 @@ table(subset(comb, numSites >= 40 & !land.island.mod.CORRECTED.overlapping.remov
 comb %>%
  filter(!land.island.mod.CORRECTED.overlapping.removed %in% c("NA", "island")) %>%
  filter(numSites > 50) %>%
- select(Dataset, numSites, old, percAgg, land.island.mod.CORRECTED.overlapping.removed) %>%
- arrange(old) %>%
-  group_by(old) %>%
+ select(Dataset, numSites, AGE, percAgg, land.island.mod.CORRECTED.overlapping.removed) %>%
+ arrange(AGE) %>%
+  group_by(AGE) %>%
   summarise(n = n(), mean = mean(percAgg), median = median(percAgg))
 
 
@@ -78,3 +78,31 @@ with(subset(comb, land.island.published != "island"), tapply(numSites, age.publi
 
 ## merge and check percAgg
 merge(combETE%>%select(Dataset, percAgg, Age), comb2%>%select(Dataset, percAgg, age.published), by = "Dataset", all = TRUE)
+
+
+comb %>% 
+  filter(land.island.published == "land") %>%
+  select(Dataset, numSites, numSpp,percAgg, land.island.mod.CORRECTED.overlapping.removed)
+
+comb %>% 
+  filter(land.island.mod.CORRECTED.overlapping.removed == "land") %>%
+  filter(dispersalLimited) %>%
+  select(Dataset, numSites, percAgg)
+
+comb %>% 
+  filter(land.island.mod.CORRECTED.overlapping.removed %in% c("ETE", "land")) %>%
+  filter(AGE == "Modern") %>%
+  filter(numSites > 40) %>%
+  select(Dataset, numSites, percAgg, numAgg)
+
+comb %>% 
+  filter(land.island.mod.CORRECTED.overlapping.removed %in% c("ETE", "land")) %>%
+  filter(AGE == "Shallow Time") %>%
+  filter(numSites > 40) %>%
+  select(Dataset, numSites, percAgg, numAgg)
+
+comb %>% 
+  filter(land.island.mod.CORRECTED.overlapping.removed %in% c("ETE", "land")) %>%
+  filter(AGE == "Deep Time") %>%
+  filter(numSites > 40) %>%
+  select(Dataset, numSites, percAgg, numAgg)
