@@ -47,6 +47,16 @@ combp <- comb %>%
 
 table(combp$land.island.published)
 
+#Number small datasets
+
+combp %>%
+  filter(land.island.published != "island") %>%
+  summarise(n = n(), small = sum(numSites < 50), psmall = mean(numSites < 50))
+
+combp %>%
+  filter(land.island.published == "island") %>%
+  summarise(n = n(), small = sum(numSites < 50), psmall = mean(numSites < 50))
+
 #segmented
 set.seed(9088)#from random.org
 boot.num = 10000
