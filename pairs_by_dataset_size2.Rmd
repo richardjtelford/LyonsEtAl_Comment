@@ -322,7 +322,8 @@ print(plot.pagg(wisconsin.reduced)+ggtitle("d)"), vp = vplayout(2, 2))
 ```{r dumpDataChunk, eval = TRUE, cache=FALSE}
 save(wisconsin.reduced, mammals.reduced, pollen0.reduced, pollen1.reduced, rodent.reduced, file = "reduced.rdata")
 save(pollen0.pairs, pollen1.pairs, file = "pairs.rdata")
-
+#
+dev.print(device = jpeg, filename = "Telford_EDfig1.jpg", height = 18*300/2.5, width = 18*300/2.5, units = "px")
 ```
 
 # References
