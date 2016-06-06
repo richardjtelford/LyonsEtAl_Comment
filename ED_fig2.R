@@ -7,7 +7,7 @@ library("dplyr")
 #load data
 comb <- read_excel("data/comb.data_revised_for_Telford.xlsx", sheet = 1)
 
-comb$AGE <- cut(comb$age.published, breaks = c(0, 100, 1000000, 10^9), labels = c("Modern", "Shallow Time", "Deep Time"))
+comb$AGE <- cut(comb$age.published, breaks = c(0, 100, 1000000, 10^9), labels = c("Modern", "Shallow Fossil", "Deep Fossil"))
 
 comb2 <- comb %>%
   filter(!land.island.published %in% c("island", "NA"))
@@ -23,9 +23,10 @@ g <- ggplot(comb2, aes(x = numSites, y = percAgg, col = AGE, shape = AGE)) +
   geom_jitter(width = 0, height = 0.02) +
   geom_smooth(aes(group  = 1), method = "gam", formula = y ~s(x), method.args = list(family = "quasibinomial"), show.legend = FALSE) +
   labs(x = "Number of sites", y = "Proportion aggregated pairs", colour = "Age", shape = "Age") + 
-  theme(legend.justification=c(0, 0), legend.position=c(.76, 0)) 
+  theme(legend.position = "none")
+  #theme(legend.justification=c(0, 0), legend.position=c(.6, 0)) 
 print(g)
-ggsave("ed_fig2.png", height = 89 * 1.5, width = 89 * 1.5, units = "mm")
+ggsave("fig2.pdf", height = 89 , width = 89 , units = "mm")
 
 g + geom_vline(xintercept = c(20, 30, 40, 50))
 
