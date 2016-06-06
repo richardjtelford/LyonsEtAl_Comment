@@ -158,3 +158,10 @@ mods_cor <- list(
 table1c <- make.table1(mods_cor)
 table1c
 
+## t-tests
+combnew <- comb %>% filter(land.island.mod.CORRECTED.overlapping.removed %in% c("land", "ETE"))
+mod <- lm(percAgg~AGE, data = combnew)
+summary(mod)
+
+mod40 <- lm(percAgg~AGE, data = combnew, subset = numSites >40)
+summary(mod40)
